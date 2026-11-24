@@ -3,8 +3,10 @@ dist/
 .env
 .env.*
 !.env.example
-.claude/settings.local.json
+.claude/
+skills-lock.json
 .DS_Store
 coverage/
 *.log
 *.local.ts
+.neon

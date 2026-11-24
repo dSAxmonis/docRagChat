@@ -13,11 +13,15 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Neon connection string (postgresql://...?sslmode=require)
+      # Neon pooled connection string (host contains -pooler), ?sslmode=verify-full
       - key: DATABASE_URL
         sync: false
+      # Neon direct connection string, used only for migrations
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      # TLS settings come from sslmode in the URLs
       - key: DATABASE_SSL
-        value: "true"
+        value: "false"
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_CHAT_MODELS

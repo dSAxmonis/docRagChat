@@ -62,6 +62,7 @@ See [`.env.example`](.env.example). Key settings:
 | Variable | Default | Notes |
 | --- | --- | --- |
 | `DATABASE_URL` | none (required) | Postgres with the `vector` extension available |
+| `DATABASE_URL_UNPOOLED` | none (optional) | Direct URL used only for migrations (Neon: the URL without `-pooler`) |
 | `GEMINI_API_KEY` | none (required) | |
 | `GEMINI_CHAT_MODELS` | `gemini-flash-lite-latest,gemini-flash-latest,gemini-3.8-flash` | Comma-separated. Tried in order on 503/429/404 |
 | `GEMINI_EMBED_MODEL` | `gemini-embedding-001` | |
@@ -90,9 +91,9 @@ web/src             one-page React UI
 
 `render.yaml` is a Blueprint for one Docker web service. Postgres runs on [Neon](https://neon.tech)'s free tier, which supports pgvector and doesn't expire. Render's free Postgres is limited to one per workspace and expires after 30 days.
 
-1. Create a Neon project and copy its connection string (`postgresql://…?sslmode=require`).
+1. Create a Neon project (`neon init` / `neon deploy` writes `DATABASE_URL` and `DATABASE_URL_UNPOOLED` to `.env`).
 2. Render Dashboard → **New → Blueprint** → select this repo.
-3. Enter `DATABASE_URL` (the Neon string) and `GEMINI_API_KEY` when prompted.
+3. Enter `DATABASE_URL` (pooled), `DATABASE_URL_UNPOOLED` (direct) and `GEMINI_API_KEY` when prompted. Use `sslmode=verify-full` in both URLs.
 4. Render builds the Dockerfile. On boot, migrations create the `vector` extension and the tables. The health check uses `/api/health`.
 
 On the free tier the service sleeps when idle, so the first request takes about 30 s.

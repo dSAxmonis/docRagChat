@@ -13,8 +13,16 @@ async function main() {
   const config = loadConfig()
   const pool = createPool(config.DATABASE_URL, config.DATABASE_SSL)
 
-  const applied = await migrate(pool)
-  if (applied.length) console.log(`Applied migrations: ${applied.join(', ')}`)
+  // Migrations need a session (advisory lock), so run them over the direct URL when one is given
+  const migrationPool = config.DATABASE_URL_UNPOOLED
+    ? createPool(config.DATABASE_URL_UNPOOLED, config.DATABASE_SSL, 1)
+    : pool
+  try {
+    const applied = await migrate(migrationPool)
+    if (applied.length) console.log(`Applied migrations: ${applied.join(', ')}`)
+  } finally {
+    if (migrationPool !== pool) await migrationPool.end()
+  }
 
   const app = createApp(
     {
