@@ -7,9 +7,10 @@ Express serves both `/api` and the built React app. This gives one Docker image,
 *Trade-off:* the frontend and API can't scale or deploy separately. That's fine at this size.
 
 ## 2. Gemini for chat and embeddings
-The requirement was "free, with the most tokens". Gemini's free tier covers both chat (`gemini-2.5-flash`) and embeddings (`gemini-embedding-001`) with a single key.
+The requirement was "free, with the most tokens". Gemini's free tier covers both chat (the Flash family) and embeddings (`gemini-embedding-001`) with a single key.
 - The client calls the REST API with `fetch` instead of using an SDK. It's about 100 lines, has no SDK churn, and is easy to mock.
 - Embedder and LLM sit behind small `Embedder` / `ChatModel` interfaces, so swapping providers is one new class.
+- Chat goes through a list of fallback models (`gemini-flash-lite-latest` → `gemini-flash-latest` → `gemini-3.8-flash`). Lite goes first because it was the only one answering reliably on the free tier, and with retrieved passages and citations a lite model is good enough. While building this, the flash models returned 503 "high demand" for minutes at a time and `gemini-2.5-flash` had been retired for new keys (404). When that happens, the client moves on to the next model after one quick retry, with a 25 s cap per attempt (overloaded models sometimes hang instead of returning 503). Using the `-latest` aliases avoids having to edit code each time Google retires a model.
 - Free-tier limits are low (per-minute token caps). The client retries `429` and `5xx` with exponential backoff. A quota error that persists becomes a clear `503` ("quota reached"), and other provider failures become `502`.
 *Trade-off:* a large upload (hundreds of chunks) can be slow or hit the free quota. A paid key removes this.
 

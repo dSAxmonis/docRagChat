@@ -57,6 +57,26 @@ describe('GeminiChat', () => {
     expect(body.contents[0].parts[0].text).toBe('p')
   })
 
+  it('falls back to the next model when one is overloaded or retired', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(json({ error: { message: 'retired' } }, 404))
+      .mockResolvedValueOnce(json({ error: { message: 'high demand' } }, 503))
+      .mockResolvedValueOnce(json({ error: { message: 'high demand' } }, 503))
+      .mockResolvedValueOnce(json({ candidates: [{ content: { parts: [{ text: 'from lite' }] } }] }))
+    const chat = new GeminiChat({ apiKey: 'k', model: ['old', 'flash', 'lite'], fetchFn, retryBaseMs: 0 })
+    expect(await chat.generate({ system: 's', prompt: 'p' })).toBe('from lite')
+    const urls = fetchFn.mock.calls.map((c) => String(c[0]))
+    expect(urls.map((u) => u.match(/models\/(\w+):/)?.[1])).toEqual(['old', 'flash', 'flash', 'lite'])
+  })
+
+  it('does not fall back on a bad request', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(json({ error: { message: 'API key not valid' } }, 400))
+    const chat = new GeminiChat({ apiKey: 'k', model: ['a', 'b'], fetchFn, retryBaseMs: 0 })
+    await expect(chat.generate({ system: '', prompt: '' })).rejects.toThrow(/API key not valid/)
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+  })
+
   it('throws on an empty or blocked answer', async () => {
     const empty = vi.fn().mockResolvedValue(json({ candidates: [] }))
     await expect(new GeminiChat({ apiKey: 'k', model: 'm', fetchFn: empty }).generate({ system: '', prompt: '' })).rejects.toThrow(

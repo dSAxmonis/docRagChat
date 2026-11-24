@@ -63,7 +63,7 @@ See [`.env.example`](.env.example). Key settings:
 | --- | --- | --- |
 | `DATABASE_URL` | none (required) | Postgres with the `vector` extension available |
 | `GEMINI_API_KEY` | none (required) | |
-| `GEMINI_CHAT_MODEL` | `gemini-2.5-flash` | |
+| `GEMINI_CHAT_MODELS` | `gemini-flash-lite-latest,gemini-flash-latest,gemini-3.8-flash` | Comma-separated. Tried in order on 503/429/404 |
 | `GEMINI_EMBED_MODEL` | `gemini-embedding-001` | |
 | `EMBED_DIM` | `768` | Must match `vector(768)` in the migration |
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | `800` / `100` | characters |

@@ -9,7 +9,12 @@ const schema = z.object({
     .default('false')
     .transform((v) => v === 'true'),
   GEMINI_API_KEY: z.string().min(1, 'GEMINI_API_KEY is required'),
-  GEMINI_CHAT_MODEL: z.string().default('gemini-2.5-flash'),
+  /** Comma-separated; tried in order when a model is overloaded or retired. */
+  GEMINI_CHAT_MODELS: z
+    .string()
+    .default('gemini-flash-lite-latest,gemini-flash-latest,gemini-3.8-flash')
+    .transform((v) => v.split(',').map((m) => m.trim()).filter(Boolean))
+    .refine((v) => v.length > 0, 'at least one model is required'),
   GEMINI_EMBED_MODEL: z.string().default('gemini-embedding-001'),
   EMBED_DIM: z.coerce.number().int().positive().default(768),
   CHUNK_SIZE: z.coerce.number().int().min(100).default(800),
