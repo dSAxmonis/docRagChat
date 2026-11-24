@@ -86,15 +86,16 @@ server/test         Vitest + supertest
 web/src             one-page React UI
 ```
 
-## Deploy (Render)
+## Deploy (Render + Neon)
 
-`render.yaml` is a Blueprint for one Docker web service plus one Postgres database.
+`render.yaml` is a Blueprint for one Docker web service. Postgres runs on [Neon](https://neon.tech)'s free tier, which supports pgvector and doesn't expire. Render's free Postgres is limited to one per workspace and expires after 30 days.
 
-1. Render Dashboard → **New → Blueprint** → select this repo.
-2. Enter `GEMINI_API_KEY` when prompted.
-3. Render builds the Dockerfile, migrations run on boot, and the health check uses `/api/health`.
+1. Create a Neon project and copy its connection string (`postgresql://…?sslmode=require`).
+2. Render Dashboard → **New → Blueprint** → select this repo.
+3. Enter `DATABASE_URL` (the Neon string) and `GEMINI_API_KEY` when prompted.
+4. Render builds the Dockerfile. On boot, migrations create the `vector` extension and the tables. The health check uses `/api/health`.
 
-On the free tier the service sleeps when idle, so the first request takes about 30 s. The free database expires after 30 days.
+On the free tier the service sleeps when idle, so the first request takes about 30 s.
 
 ## CI
 

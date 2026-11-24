@@ -59,5 +59,6 @@ One React page. It was built first with plain HTML and under 20 lines of CSS on 
 
 ## 13. Deployment
 - **Docker:** a multi-stage build on `node:22-alpine`. The runtime image holds only the server's production dependencies plus the compiled server and frontend, runs as the non-root `node` user, and has a `HEALTHCHECK`.
-- **Render Blueprint:** one Docker web service plus one managed Postgres (16), which supports `CREATE EXTENSION vector`. The API key is a `sync: false` secret, so it never lives in the repo.
-- **Free-tier limits:** the service sleeps when idle (cold start of about 30 s), and the database expires after 30 days.
+- **Render Blueprint:** one Docker web service. `DATABASE_URL` and the API key are `sync: false` secrets, so they never live in the repo.
+- **Database on Neon, not Render:** Render allows only one free Postgres per workspace (already taken by another project), and its free databases expire after 30 days. Neon's free tier supports pgvector, doesn't expire, and connects over TLS (`DATABASE_SSL=true`). Moving to Render Postgres later only means changing `DATABASE_URL`.
+- **Free-tier limits:** the service sleeps when idle (cold start of about 30 s).
