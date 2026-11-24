@@ -1,0 +1,13 @@
+:root {
+  --bg: #ffffff;
+  --text: #1a1a1a;
+  --accent: #2563eb;
+  --font: system-ui, sans-serif;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+main { max-width: 760px; margin: 0 auto; padding: 1rem; }
+button { background: var(--accent); color: #fff; border: 0; padding: 0.3rem 0.8rem; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+form { display: flex; gap: 0.5rem; }
+form input { flex: 1; padding: 0.4rem; }
+blockquote { margin: 0.3rem 0; padding-left: 0.6rem; border-left: 3px solid var(--accent); }
