@@ -22,6 +22,11 @@ const schema = z.object({
   CHUNK_SIZE: z.coerce.number().int().min(100).default(800),
   CHUNK_OVERLAP: z.coerce.number().int().min(0).default(100),
   TOP_K: z.coerce.number().int().min(1).max(20).default(5),
+  /**
+   * Number of reverse proxies in front of the app, so req.ip (the rate-limit key) is the real client.
+   * 0 = direct. Render (Cloudflare edge + Render load balancer) needs 2.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(20),
   MAX_UPLOAD_MB: z.coerce.number().positive().default(5),
 })

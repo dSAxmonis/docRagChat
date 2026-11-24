@@ -40,7 +40,7 @@ async function main() {
       chunkOverlap: config.CHUNK_OVERLAP,
       topK: config.TOP_K,
       chatRateLimitPerMin: config.CHAT_RATE_LIMIT_PER_MIN,
-      trustProxy: config.NODE_ENV === 'production',
+      trustProxyHops: config.TRUST_PROXY_HOPS,
       staticDir: process.env.STATIC_DIR ?? path.resolve(here, '../../web/dist'),
     },
   )

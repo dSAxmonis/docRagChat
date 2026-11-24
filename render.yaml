@@ -30,6 +30,9 @@ services:
         value: gemini-embedding-001
       - key: EMBED_DIM
         value: "768"
+      # Cloudflare edge + Render load balancer sit in front of the app
+      - key: TRUST_PROXY_HOPS
+        value: "2"
       - key: CHAT_RATE_LIMIT_PER_MIN
         value: "20"
       - key: MAX_UPLOAD_MB

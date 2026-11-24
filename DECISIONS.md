@@ -43,7 +43,7 @@ Retrieved chunks are numbered `[1]…[5]` in the prompt, with document name and 
 If retrieval returns nothing, the LLM is skipped entirely and a fixed "nothing relevant" answer comes back.
 
 ## 9. Rate limiting
-`express-rate-limit` applies to `/api/chat` only, because that's where cost is: each call is one embedding plus one LLM call. The default is 20 requests per minute per IP, in memory. `trust proxy` is turned on in production so Render's load balancer doesn't make every user share one IP.
+`express-rate-limit` applies to `/api/chat` only, because that's where cost is: each call is one embedding plus one LLM call. The default is 20 requests per minute per IP, in memory. Requests reach the app through Cloudflare and then Render's load balancer. `TRUST_PROXY_HOPS=2` makes Express take the client IP two entries from the right of `X-Forwarded-For`. That value can't be spoofed by sending a fake left-most header. Found by testing on the live service: with 1 hop, the rate-limit key was a rotating Cloudflare edge IP, so the limit never triggered.
 *Trade-off:* the in-memory store is per instance. Running more than one instance would need a Redis store.
 
 ## 10. Answers are not streamed

@@ -70,6 +70,7 @@ See [`.env.example`](.env.example). Key settings:
 | `CHUNK_SIZE` / `CHUNK_OVERLAP` | `800` / `100` | characters |
 | `TOP_K` | `5` | |
 | `CHAT_RATE_LIMIT_PER_MIN` | `20` | per IP |
+| `TRUST_PROXY_HOPS` | `0` | Proxies in front of the app. Render needs `2` (Cloudflare + load balancer) |
 | `MAX_UPLOAD_MB` | `5` | |
 
 ## Project layout

@@ -16,7 +16,8 @@ export interface AppOptions {
   chunkOverlap: number
   topK: number
   chatRateLimitPerMin: number
-  trustProxy?: boolean
+  /** Reverse-proxy hops to trust when resolving the client IP (0 = none). */
+  trustProxyHops?: number
   /** Directory with the built frontend; served when present. */
   staticDir?: string
 }
@@ -49,7 +50,7 @@ const decodeFilename = (name: string) => Buffer.from(name, 'latin1').toString('u
 export function createApp(deps: AppDeps, opts: AppOptions) {
   const app = express()
   app.disable('x-powered-by')
-  if (opts.trustProxy) app.set('trust proxy', 1)
+  if (opts.trustProxyHops) app.set('trust proxy', opts.trustProxyHops)
   app.use(express.json({ limit: '100kb' }))
 
   const upload = multer({
