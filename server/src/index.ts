@@ -41,6 +41,7 @@ async function main() {
       topK: config.TOP_K,
       chatRateLimitPerMin: config.CHAT_RATE_LIMIT_PER_MIN,
       trustProxyHops: config.TRUST_PROXY_HOPS,
+      accessLog: config.NODE_ENV === 'production',
       staticDir: process.env.STATIC_DIR ?? path.resolve(here, '../../web/dist'),
     },
   )

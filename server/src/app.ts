@@ -18,6 +18,8 @@ export interface AppOptions {
   chatRateLimitPerMin: number
   /** Reverse-proxy hops to trust when resolving the client IP (0 = none). */
   trustProxyHops?: number
+  /** Log one line per API request (method, path, status, duration, client IP). */
+  accessLog?: boolean
   /** Directory with the built frontend; served when present. */
   staticDir?: string
 }
@@ -69,6 +71,17 @@ export function createApp(deps: AppDeps, opts: AppOptions) {
   })
 
   const api = express.Router()
+
+  if (opts.accessLog) {
+    api.use((req, res, next) => {
+      const start = Date.now()
+      res.on('finish', () => {
+        const hops = String(req.headers['x-forwarded-for'] ?? '').split(',').filter((s) => s.trim()).length
+        console.log(`${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms ip=${req.ip} xff=${hops}`)
+      })
+      next()
+    })
+  }
 
   api.get('/health', async (_req, res) => {
     try {
