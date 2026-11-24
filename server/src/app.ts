@@ -124,7 +124,7 @@ export function createApp(deps: AppDeps, opts: AppOptions) {
   app.use('/api', api)
 
   if (opts.staticDir && existsSync(opts.staticDir)) {
-    const staticDir = opts.staticDir
+    const staticDir = path.resolve(opts.staticDir)
     app.use(express.static(staticDir, { index: false, maxAge: '1h' }))
     app.get('/{*splat}', (_req: Request, res: Response) => {
       res.sendFile(path.join(staticDir, 'index.html'))

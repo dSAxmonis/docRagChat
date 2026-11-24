@@ -54,7 +54,7 @@ If retrieval returns nothing, the LLM is skipped entirely and a fixed "nothing r
 *Trade-off:* the pgvector SQL itself isn't covered by automated tests (pg-mem can't emulate pgvector). It was checked by hand against the Docker Compose database. A CI job with a `pgvector/pgvector` service container would be the next addition.
 
 ## 12. Frontend
-One React page, plain HTML elements, 13 lines of CSS built on the `--bg`, `--text`, `--accent` and `--font` variables, so a theme can be applied later without touching components. Every document is selected by default, and newly uploaded documents are selected automatically.
+One React page. It was built first with plain HTML and under 20 lines of CSS on `--bg`, `--text`, `--accent` and `--font`, so the theme could go on afterwards without changing how the page works. The theme follows a reference mock-up: a near-black background with an orange glow, orange gradient bubbles for user messages, glassy answer cards with numbered citation chips, documents as cards you tap to select, and a pill-shaped composer whose paperclip button uploads. Everything stays on one screen. All documents start selected, and newly uploaded ones are selected automatically.
 
 ## 13. Deployment
 - **Docker:** a multi-stage build on `node:22-alpine`. The runtime image holds only the server's production dependencies plus the compiled server and frontend, runs as the non-root `node` user, and has a `HEALTHCHECK`.
