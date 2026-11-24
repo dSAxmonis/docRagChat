@@ -22,6 +22,11 @@ const schema = z.object({
   CHUNK_SIZE: z.coerce.number().int().min(100).default(800),
   CHUNK_OVERLAP: z.coerce.number().int().min(0).default(100),
   TOP_K: z.coerce.number().int().min(1).max(20).default(5),
+  /**
+   * Number of reverse proxies in front of the app, so req.ip (the rate-limit key) is the real client.
+   * 0 = direct. Defaults to 2 on Render (Cloudflare edge + Render load balancer).
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   CHAT_RATE_LIMIT_PER_MIN: z.coerce.number().int().positive().default(20),
   MAX_UPLOAD_MB: z.coerce.number().positive().default(5),
 })
@@ -29,7 +34,9 @@ const schema = z.object({
 export type Config = z.infer<typeof schema>
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
-  const parsed = schema.safeParse(env)
+  // Render sets RENDER=true; its traffic passes Cloudflare and a load balancer (2 hops)
+  const withDefaults = env.TRUST_PROXY_HOPS === undefined && env.RENDER === 'true' ? { ...env, TRUST_PROXY_HOPS: '2' } : env
+  const parsed = schema.safeParse(withDefaults)
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`).join('\n')
     throw new Error(`Invalid configuration:\n${issues}`)

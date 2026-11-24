@@ -228,3 +228,16 @@ describe('unknown routes', () => {
     expect(res.body.error).toBe('Not found')
   })
 })
+
+describe('client IP behind proxies', () => {
+  it('rate limits by the client IP found the configured number of hops back', async () => {
+    const proxied = createApp(fakes, { ...opts, chatRateLimitPerMin: 1, trustProxyHops: 2 })
+    const ask = (xff: string) =>
+      request(proxied).post('/api/chat').set('x-forwarded-for', xff).send({ question: 'x', documentIds: [] })
+    // Same client behind different edge IPs shares one bucket; a spoofed left-most entry does not help
+    expect((await ask('9.9.9.9, 1.1.1.1')).status).toBe(400)
+    expect((await ask('6.6.6.6, 9.9.9.9, 2.2.2.2')).status).toBe(429)
+    // A different client gets its own bucket
+    expect((await ask('8.8.8.8, 1.1.1.1')).status).toBe(400)
+  })
+})
