@@ -21,8 +21,8 @@ services:
         value: "false"
       - key: GEMINI_API_KEY
         sync: false
-      - key: GEMINI_CHAT_MODEL
-        value: gemini-2.5-flash
+      - key: GEMINI_CHAT_MODELS
+        value: gemini-flash-lite-latest,gemini-flash-latest,gemini-3.8-flash
       - key: GEMINI_EMBED_MODEL
         value: gemini-embedding-001
       - key: EMBED_DIM

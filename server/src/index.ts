@@ -24,7 +24,7 @@ async function main() {
         model: config.GEMINI_EMBED_MODEL,
         dimensions: config.EMBED_DIM,
       }),
-      chat: new GeminiChat({ apiKey: config.GEMINI_API_KEY, model: config.GEMINI_CHAT_MODEL }),
+      chat: new GeminiChat({ apiKey: config.GEMINI_API_KEY, model: config.GEMINI_CHAT_MODELS }),
     },
     {
       maxUploadMb: config.MAX_UPLOAD_MB,
