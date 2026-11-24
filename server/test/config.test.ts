@@ -19,6 +19,12 @@ describe('loadConfig', () => {
     )
   })
 
+  it('trusts 2 proxy hops on Render unless overridden', () => {
+    expect(loadConfig(base).TRUST_PROXY_HOPS).toBe(0)
+    expect(loadConfig({ ...base, RENDER: 'true' }).TRUST_PROXY_HOPS).toBe(2)
+    expect(loadConfig({ ...base, RENDER: 'true', TRUST_PROXY_HOPS: '1' }).TRUST_PROXY_HOPS).toBe(1)
+  })
+
   it('rejects missing secrets and bad chunk settings', () => {
     expect(() => loadConfig({})).toThrow(/DATABASE_URL[\s\S]*GEMINI_API_KEY/)
     expect(() => loadConfig({ ...base, CHUNK_SIZE: '200', CHUNK_OVERLAP: '200' })).toThrow(/CHUNK_OVERLAP/)
