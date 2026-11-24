@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import request from 'supertest'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ProviderError } from '../src/ai/types.js'
@@ -201,6 +204,20 @@ describe('POST /api/chat', () => {
     expect(third.body.error).toMatch(/Too many/)
     // Other endpoints are not limited
     expect((await request(limited).get('/api/documents')).status).toBe(200)
+  })
+})
+
+describe('frontend serving', () => {
+  it('serves index.html for client routes from a relative static dir', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'web-'))
+    writeFileSync(path.join(dir, 'index.html'), '<h1>app</h1>')
+    const web = createApp(fakes, { ...opts, staticDir: path.relative(process.cwd(), dir) })
+    for (const url of ['/', '/some/page']) {
+      const res = await request(web).get(url)
+      expect(res.status).toBe(200)
+      expect(res.text).toContain('<h1>app</h1>')
+    }
+    expect((await request(web).get('/api/nope')).status).toBe(404)
   })
 })
 
