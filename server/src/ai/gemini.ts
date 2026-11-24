@@ -5,6 +5,7 @@ const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta'
 const EMBED_BATCH = 100
 const MAX_RETRIES = 4
 const TIMEOUT_MS = 60_000
+const CHAT_FALLBACK_TIMEOUT_MS = 25_000
 
 type FetchFn = typeof fetch
 
@@ -13,6 +14,10 @@ interface GeminiOptions {
   fetchFn?: FetchFn
   /** Base delay for exponential backoff; tests set this to 0. */
   retryBaseMs?: number
+  /** Retries per request for 429/5xx/network errors. */
+  maxRetries?: number
+  /** Per-attempt timeout. */
+  timeoutMs?: number
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -21,6 +26,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 async function callGemini<T>(path: string, body: unknown, opts: GeminiOptions): Promise<T> {
   const fetchFn = opts.fetchFn ?? fetch
   const base = opts.retryBaseMs ?? 1000
+  const maxRetries = opts.maxRetries ?? MAX_RETRIES
   for (let attempt = 0; ; attempt++) {
     let res: Response
     try {
@@ -28,10 +34,10 @@ async function callGemini<T>(path: string, body: unknown, opts: GeminiOptions): 
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': opts.apiKey },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal: AbortSignal.timeout(opts.timeoutMs ?? TIMEOUT_MS),
       })
     } catch (err) {
-      if (attempt < MAX_RETRIES) {
+      if (attempt < maxRetries) {
         await sleep(base * 2 ** attempt)
         continue
       }
@@ -40,7 +46,7 @@ async function callGemini<T>(path: string, body: unknown, opts: GeminiOptions): 
     if (res.ok) return (await res.json()) as T
 
     const retryable = res.status === 429 || res.status >= 500
-    if (retryable && attempt < MAX_RETRIES) {
+    if (retryable && attempt < maxRetries) {
       await sleep(base * 2 ** attempt)
       continue
     }
@@ -105,24 +111,57 @@ interface GenerateResponse {
   promptFeedback?: { blockReason?: string }
 }
 
+/** Errors worth trying the next model for: overloaded, rate limited, or model retired/unknown. */
+const shouldFallBack = (err: unknown) =>
+  err instanceof ProviderError && (err.status === undefined || err.status === 404 || err.status === 429 || err.status >= 500)
+
+/**
+ * Chat client that tries each model in order. Free-tier flash models are often briefly
+ * overloaded (503) and older ones get retired (404), so a fallback list keeps chat working.
+ */
 export class GeminiChat implements ChatModel {
-  constructor(private opts: GeminiOptions & { model: string }) {}
+  private models: string[]
+
+  constructor(private opts: GeminiOptions & { model: string | string[] }) {
+    this.models = (Array.isArray(opts.model) ? opts.model : [opts.model]).filter(Boolean)
+    if (this.models.length === 0) throw new Error('GeminiChat needs at least one model')
+  }
 
   async generate({ system, prompt }: { system: string; prompt: string }) {
+    let lastError: unknown
+    for (const [i, model] of this.models.entries()) {
+      try {
+        return await this.generateWith(model, system, prompt)
+      } catch (err) {
+        lastError = err
+        if (i === this.models.length - 1 || !shouldFallBack(err)) throw err
+        console.warn(`[gemini] ${model} failed (${(err as Error).message}); falling back to ${this.models[i + 1]}`)
+      }
+    }
+    throw lastError
+  }
+
+  private async generateWith(model: string, system: string, prompt: string) {
     const data = await callGemini<GenerateResponse>(
-      `models/${this.opts.model}:generateContent`,
+      `models/${model}:generateContent`,
       {
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: { temperature: 0.2 },
       },
-      this.opts,
+      // Fail over quickly instead of retrying one overloaded model for a long time
+      {
+        ...this.opts,
+        maxRetries: this.opts.maxRetries ?? (this.models.length > 1 ? 1 : MAX_RETRIES),
+        // Overloaded models sometimes hang instead of answering 503
+        timeoutMs: this.opts.timeoutMs ?? (this.models.length > 1 ? CHAT_FALLBACK_TIMEOUT_MS : TIMEOUT_MS),
+      },
     )
     if (data.promptFeedback?.blockReason) {
-      throw new ProviderError(`Gemini blocked the prompt: ${data.promptFeedback.blockReason}`)
+      throw new ProviderError(`Gemini blocked the prompt: ${data.promptFeedback.blockReason}`, 400)
     }
     const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim()
-    if (!text) throw new ProviderError('Gemini returned an empty answer')
+    if (!text) throw new ProviderError('Gemini returned an empty answer', 502)
     return text
   }
 }
