@@ -23,7 +23,7 @@ Similarity is `ORDER BY embedding <=> $q` (cosine distance), filtered to the sel
 *Trade-off:* the HNSW index is global across all documents. With a narrow document filter on a very large table, post-filtering can return fewer than k rows. At this scale that doesn't come up. The fixes would be iterative scan (`hnsw.iterative_scan`, pgvector 0.8+) or partitioning.
 
 ## 5. Plain `pg` and plain SQL migrations
-No ORM, as the brief asked. A roughly 40-line runner applies `migrations/*.sql` in order and records each one in `schema_migrations`. Each file runs in a transaction, and a Postgres advisory lock stops two instances that boot at the same time from racing. Migrations run on startup, so a deploy needs no separate step.
+No ORM, as the brief asked. A roughly 40-line runner applies `migrations/*.sql` in order and records each one in `schema_migrations`. Each file runs in a transaction, and a Postgres advisory lock stops two instances that boot at the same time from racing. Migrations run on startup, so a deploy needs no separate step. On Neon the app's queries go through the pooled (`-pooler`, PgBouncer) URL. Migrations use `DATABASE_URL_UNPOOLED`, a direct connection, because a session advisory lock doesn't work behind a transaction-mode pooler. The driver stays `pg` (node-postgres): this is a long-running server, so one pool is reused across requests. Neon's serverless driver is meant for edge and serverless runtimes.
 
 ## 6. Chunking: recursive character splitter
 The text is split at the coarsest boundary that fits (paragraph → line → sentence → word → hard cut). The pieces are then packed greedily into chunks of at most 800 characters. Each new chunk starts with up to 100 characters of *whole* trailing pieces from the previous chunk, so the overlap never starts mid-word.
@@ -59,5 +59,6 @@ One React page. It was built first with plain HTML and under 20 lines of CSS on 
 
 ## 13. Deployment
 - **Docker:** a multi-stage build on `node:22-alpine`. The runtime image holds only the server's production dependencies plus the compiled server and frontend, runs as the non-root `node` user, and has a `HEALTHCHECK`.
-- **Render Blueprint:** one Docker web service plus one managed Postgres (16), which supports `CREATE EXTENSION vector`. The API key is a `sync: false` secret, so it never lives in the repo.
-- **Free-tier limits:** the service sleeps when idle (cold start of about 30 s), and the database expires after 30 days.
+- **Render Blueprint:** one Docker web service. `DATABASE_URL` and the API key are `sync: false` secrets, so they never live in the repo.
+- **Database on Neon, not Render:** Render allows only one free Postgres per workspace (already taken by another project), and its free databases expire after 30 days. Neon's free tier supports pgvector, doesn't expire, and connects over TLS (`DATABASE_SSL=true`). Moving to Render Postgres later only means changing `DATABASE_URL`.
+- **Free-tier limits:** the service sleeps when idle (cold start of about 30 s).

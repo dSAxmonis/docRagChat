@@ -1,7 +1,10 @@
 {
   "name": "doc-rag-chatbot",
   "private": true,
-  "workspaces": ["server", "web"],
+  "workspaces": [
+    "server",
+    "web"
+  ],
   "scripts": {
     "dev": "npm run dev -w server & npm run dev -w web",
     "build": "npm run build -w web && npm run build -w server",
@@ -9,5 +12,11 @@
     "test": "npm test -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w web"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.6",
+    "@neon/env": "^2.1.9"
+  }
 }

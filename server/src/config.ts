@@ -4,6 +4,8 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
+  /** Direct (non-pooled) URL for migrations; Neon's PgBouncer pooler can't hold session advisory locks. */
+  DATABASE_URL_UNPOOLED: z.preprocess((v) => (v === '' ? undefined : v), z.string().url().optional()),
   DATABASE_SSL: z
     .enum(['true', 'false'])
     .default('false')
